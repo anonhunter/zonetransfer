@@ -4,6 +4,7 @@ import dns.zone
 import dns.exception
 import time
 import sys
+import argparse
 
 # ANSI color codes
 GREEN = '\033[92m'
@@ -11,6 +12,28 @@ RED = '\033[91m'
 YELLOW = '\033[93m'
 ENDC = '\033[0m'
 BOLD = '\033[1m'
+PURPLE = '\033[95m'
+
+def show_banner():
+    banner = f"""
+{PURPLE}{BOLD}
+                                                                                                                       
+@@@@@@@@   @@@@@@   @@@  @@@  @@@@@@@@  @@@@@@@  @@@@@@@    @@@@@@   @@@  @@@   @@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@   
+@@@@@@@@  @@@@@@@@  @@@@ @@@  @@@@@@@@  @@@@@@@  @@@@@@@@  @@@@@@@@  @@@@ @@@  @@@@@@@   @@@@@@@@  @@@@@@@@  @@@@@@@@  
+     @@!  @@!  @@@  @@!@!@@@  @@!         @@!    @@!  @@@  @@!  @@@  @@!@!@@@  !@@       @@!       @@!       @@!  @@@  
+    !@!   !@!  @!@  !@!!@!@!  !@!         !@!    !@!  @!@  !@!  @!@  !@!!@!@!  !@!       !@!       !@!       !@!  @!@  
+   @!!    @!@  !@!  @!@ !!@!  @!!!:!      @!!    @!@!!@!   @!@!@!@!  @!@ !!@!  !!@@!!    @!!!:!    @!!!:!    @!@!!@!   
+  !!!     !@!  !!!  !@!  !!!  !!!!!:      !!!    !!@!@!    !!!@!!!!  !@!  !!!   !!@!!!   !!!!!:    !!!!!:    !!@!@!    
+ !!:      !!:  !!!  !!:  !!!  !!:         !!:    !!: :!!   !!:  !!!  !!:  !!!       !:!  !!:       !!:       !!: :!!   
+:!:       :!:  !:!  :!:  !:!  :!:         :!:    :!:  !:!  :!:  !:!  :!:  !:!      !:!   :!:       :!:       :!:  !:!  
+ :: ::::  ::::: ::   ::   ::   :: ::::     ::    ::   :::  ::   :::   ::   ::  :::: ::    ::        :: ::::  ::   :::  
+: :: : :   : :  :   ::    :   : :: ::      :      :   : :   :   : :  ::    :   :: : :     :        : :: ::    :   : :  
+                                                                                                                       
+  DNS Zone Transfer Tester (AXFR)
+  Author: Sharik Khan (Anon Hunter)
+{ENDC}
+"""
+    print(banner)
 
 def check_zone_transfer(domain):
     vulnerable = False
@@ -101,18 +124,27 @@ def save_vulnerable_domains(vulnerable_list, filename="vuln.txt"):
         print(f"{RED}[!] Failed to save vulnerable domains: {str(e)}{ENDC}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print(f"{RED}Usage: python dns_axfr_check.py domains.txt{ENDC}")
-        sys.exit(1)
+    show_banner()  # Display author information
+    
+    parser = argparse.ArgumentParser(description='Check DNS zone transfer vulnerability (AXFR)')
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('-d', '--domain', help='Single domain to check')
+    group.add_argument('-f', '--file', help='File containing list of domains')
+    parser.add_argument('-o', '--output', default='vuln.txt', help='Output file for vulnerable domains (default: vuln.txt)')
+    
+    args = parser.parse_args()
 
-    input_file = sys.argv[1]
-    domains = read_domains_from_file(input_file)
+    domains = []
+    if args.domain:
+        domains = [args.domain]
+    elif args.file:
+        domains = read_domains_from_file(args.file)
 
     if not domains:
-        print(f"{RED}No valid domains found in the input file.{ENDC}")
+        print(f"{RED}No valid domains found.{ENDC}")
         sys.exit(1)
 
-    print(f"{BOLD}Loaded {len(domains)} domains from {input_file}{ENDC}")
+    print(f"{BOLD}Loaded {len(domains)} domains to test{ENDC}")
     
     vulnerable_domains = []
     
@@ -132,4 +164,4 @@ if __name__ == "__main__":
     
     # Save vulnerable domains to file
     if vulnerable_domains:
-        save_vulnerable_domains(vulnerable_domains)
+        save_vulnerable_domains(vulnerable_domains, args.output)
